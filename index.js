@@ -4,9 +4,13 @@ const PORT = process.env.PORT || 5000;
 const fetch = require("node-fetch");
 const app = express();
 const mongoose = require("mongoose");
-mongoose.connect("mongodb://localhost:27017/gif-search-mongodb", {
-  useNewUrlParser: true,
-});
+mongoose.connect(
+  "mongodb+srv://phuonglaitinen:@Kingkong4296@phuong-nodejs-learning-fw7ui.mongodb.net/test?retryWrites=true&w=majority",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
 const db = mongoose.connection;
 
 db.on("error", function (err) {
@@ -46,6 +50,7 @@ app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
 
   for (const item of allItems) {
     const newItem = new Gif();
+
     newItem.orig = item.images.fixed_height_downsampled.url;
     newItem
       .save()
