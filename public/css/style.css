@@ -17,6 +17,7 @@ h3 {
 
 form input {
     font-family: 'Handlee', cursive;
+    padding: 1rem 2rem;
 }
 
 #result {
