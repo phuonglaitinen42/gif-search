@@ -38,12 +38,20 @@ const Gif = mongoose.model("Gif", gifSchema);
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => res.sendFile(__dirname + "/views/search.html"));
-app.get("/api/v1/gifs/:searchQuery", async (req, res) => {
-  const searchQuery = req.params.searchQuery;
-  db.allItems.find({ keyword: { $regex: /789$/ } });
-});
+
 app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
   const searchTerm = req.params.searchTerm;
+  // if (!searchTerm) {
+  //   res.send("No result found from database");
+  //   return;
+  // }
+
+  // var regex = new RegExp(searchTerm, "i"),
+  //   query = { keyword: regex };
+
+  // Gif.find(query, function (err, resp) {
+  //   res.send(resp);
+  // });
   const gifs = await getItems(
     `http://api.giphy.com/v1/gifs/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
   );
@@ -56,7 +64,6 @@ app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
     const newItem = new Gif();
 
     newItem.orig = item.images.fixed_height_downsampled.url;
-    newItem.keyword = item.data.title;
     newItem
       .save()
       .then(function () {
