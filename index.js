@@ -38,6 +38,10 @@ const Gif = mongoose.model("Gif", gifSchema);
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => res.sendFile(__dirname + "/views/search.html"));
+app.get("/api/v1/gifs/:searchQuery", async (req, res) => {
+  const searchQuery = req.params.searchQuery;
+  db.allItems.find({ keyword: { $regex: /789$/ } });
+});
 app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
   const searchTerm = req.params.searchTerm;
   const gifs = await getItems(
@@ -52,6 +56,7 @@ app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
     const newItem = new Gif();
 
     newItem.orig = item.images.fixed_height_downsampled.url;
+    newItem.keyword = item.data.title;
     newItem
       .save()
       .then(function () {
