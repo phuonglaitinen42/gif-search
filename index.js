@@ -26,6 +26,7 @@ db.on("open", function () {
 const Schema = mongoose.Schema;
 
 const gifSchema = new Schema({
+  giphy_id: String,
   keyword: String,
   isSticker: Boolean,
   orig: String,
@@ -41,39 +42,71 @@ app.get("/", (req, res) => res.sendFile(__dirname + "/views/search.html"));
 
 app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
   const searchTerm = req.params.searchTerm;
-  // if (!searchTerm) {
-  //   res.send("No result found from database");
-  //   return;
-  // }
-
-  // var regex = new RegExp(searchTerm, "i"),
-  //   query = { keyword: regex };
-
-  // Gif.find(query, function (err, resp) {
-  //   res.send(resp);
-  // });
-  const gifs = await getItems(
-    `http://api.giphy.com/v1/gifs/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
-  );
-  const stickers = await getItems(
-    `http://api.giphy.com/v1/stickers/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
-  );
-  const allItems = gifs.data.concat(stickers.data);
-
-  for (const item of allItems) {
-    const newItem = new Gif();
-
-    newItem.orig = item.images.fixed_height_downsampled.url;
-    newItem
-      .save()
-      .then(function () {
-        console.log("Saved new record to DB");
-      })
-      .catch(function (err) {
-        console.log("Error with DB saving:" + err);
-      });
+  //filter search query
+  if (!searchTerm) {
+    res.send("Problem with search query");
+    return;
   }
-  res.send(allItems);
+
+  const regex = new RegExp(req.params.searchTerm, "i"),
+    query = { keyword: regex };
+
+  // Check if there is duplication
+  Gif.find(query, async function (err, resp) {
+    const alreadyInDB = [];
+    if (err) {
+      console.error(err);
+      res.status(501).end();
+    }
+
+    if (resp.length > 4) {
+      console.log("Found some results from DB. Displaying ...");
+      resp.forEach(function (item) {
+        alreadyInDB.push(item);
+      });
+      res.send(alreadyInDB);
+      return;
+    } else {
+      // If not enough matching results from DB then fetch from giphy api.
+      const gifs = await getItems(
+        `http://api.giphy.com/v1/gifs/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
+      );
+      const stickers = await getItems(
+        `http://api.giphy.com/v1/stickers/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
+      );
+      const allItems = gifs.data.concat(stickers.data);
+
+      for (const item of allItems) {
+        item.orig = item.images.fixed_height_downsampled.url;
+        Gif.findOne({ giphy_id: item.id }, function (err, record) {
+          if (err) {
+            console.log("An error has occurred:" + err);
+            return;
+          }
+          if (record) {
+            console.log("Duplicated record found. Abort saving");
+            return;
+          } else {
+            const newItem = new Gif();
+            newItem.giphy_id = item.id;
+            newItem.orig = item.images.fixed_height_downsampled.url;
+            newItem.keyword = item.title;
+            newItem.isSticker = item.isSticker;
+            newItem.orig_mp4 = item.images.original_mp4.mp4;
+            newItem
+              .save()
+              .then(function () {
+                console.log("Saved new record to DB");
+              })
+              .catch(function (err) {
+                console.log("Error with DB saving:" + err);
+              });
+          }
+        });
+      }
+      res.send(allItems);
+    }
+  });
 });
 
 const getItems = async (apiUrl) => {

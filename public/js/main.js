@@ -11,7 +11,7 @@ const fetchGif = async (e) => {
   const gifList = [data];
 
   for (gif of gifList[0]) {
-    const gifUrl = gif.images.fixed_height_downsampled.url;
+    const gifUrl = gif.orig;
     const img = document.createElement("IMG");
     img.src = gifUrl;
     resultDiv.appendChild(img);
