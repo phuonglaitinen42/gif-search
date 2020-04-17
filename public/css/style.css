@@ -1,25 +1,58 @@
 body {
-    background-color: peachpuff;
-    display: grid;
-    align-items: center;
-    justify-items: center;
-    font-family: 'Handlee', cursive;
+  background-color: peachpuff;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  font-family: "Handlee", cursive;
 }
 
 h1 {
-    font-size: 3rem;
-    margin: 0 auto;
+  font-size: 3rem;
+  margin: 0 auto;
 }
 
 h3 {
-    font-size: 2rem;
+  font-size: 2rem;
 }
 
+form {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  grid-gap: 60px;
+}
 form input {
-    font-family: 'Handlee', cursive;
-    padding: 1rem 2rem;
+  font-family: "Handlee", cursive;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  text-align: left;
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+form input:hover {
+  cursor: pointer;
+  box-shadow: 0 0 10px lightgreen;
+}
+
+form button {
+  width: 70%;
+  border-radius: 10px;
+  font-family: "Handlee", cursive;
+  box-shadow: none;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: lightcyan;
+}
+
+form button:hover {
+  cursor: pointer;
+  background-color: rgb(203, 248, 203);
 }
 
 #result {
-    margin: 2rem 0;
+  margin: 3rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 50px;
 }
