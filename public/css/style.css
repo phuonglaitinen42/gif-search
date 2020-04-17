@@ -51,8 +51,10 @@ form button:hover {
 }
 
 #result {
-  margin: 3rem 2rem;
+  margin: 2rem auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-gap: 50px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 30px;
+  align-items: center;
+  justify-items: center;
 }
