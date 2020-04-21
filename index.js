@@ -1,116 +1,94 @@
-const express = require("express");
-const path = require("path");
-const PORT = process.env.PORT || 5000;
-const fetch = require("node-fetch");
-const app = express();
-const mongoose = require("mongoose");
+var express = require("express");
+var PORT = process.env.PORT || 5000;
+var fetch = require("node-fetch");
+var app = express();
+var mongoose = require("mongoose");
 mongoose.connect(
   "mongodb+srv://phuonglaitinen:@Kingkong4296@phuong-nodejs-learning-fw7ui.mongodb.net/test?retryWrites=true&w=majority",
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }
+  { useNewUrlParser: true, useUnifiedTopology: true }
 );
-const db = mongoose.connection;
+
+var db = mongoose.connection;
 
 db.on("error", function (err) {
   console.log(
-    "An error has occured while establishing connection with DB:" + err
+    "An error has occured while establishing connection with DB: " + err
   );
 });
 
 db.on("open", function () {
-  console.log("database connection established");
+  console.log("Connected to DB");
 });
 
-const Schema = mongoose.Schema;
+var Schema = mongoose.Schema;
 
-const gifSchema = new Schema({
-  giphy_id: String,
-  keyword: String,
-  isSticker: Boolean,
-  orig: String,
-  orig_mp4: String,
-  loop: String,
+var rankSchema = new Schema({
+  username: String,
+  score: Number,
 });
 
-const Gif = mongoose.model("Gif", gifSchema);
+var Rank = mongoose.model("Rank", rankSchema);
 
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
-app.use(express.static(path.join(__dirname, "public")));
-app.get("/", (req, res) => res.sendFile(__dirname + "/views/search.html"));
+app
+  .use(express.static(__dirname + "/public/"))
+  .listen(PORT, () => console.log(`Listening on ${PORT}`));
 
-app.post("/api/v1/gifs/:searchTerm", async (req, res) => {
-  const searchTerm = req.params.searchTerm;
-  //filter search query
-  if (!searchTerm) {
-    res.send("Problem with search query");
-    return;
-  }
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/views/leaderboard.html");
+});
 
-  const regex = new RegExp(req.params.searchTerm, "i"),
-    query = { keyword: regex };
-
-  // Check if there is duplication
-  Gif.find(query, async function (err, resp) {
-    const alreadyInDB = [];
+app.post("/api/addRank/:username/:score", function (req, res) {
+  Rank.findOne({ username: req.params.username }, function (err, record) {
     if (err) {
-      console.error(err);
-      res.status(501).end();
+      console.error("Error while fetching from DB. ");
     }
 
-    if (resp.length > 4) {
-      console.log("Found some results from DB. Displaying ...");
-      resp.forEach(function (item) {
-        alreadyInDB.push(item);
-      });
-      res.send(alreadyInDB);
-      return;
-    } else {
-      // If not enough matching results from DB then fetch from giphy api.
-      const gifs = await getItems(
-        `http://api.giphy.com/v1/gifs/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
-      );
-      const stickers = await getItems(
-        `http://api.giphy.com/v1/stickers/search?api_key=0BGp4gNxACI48cwxh9MtqIoEo8sMF3pQ&q=${searchTerm}&limit=10`
-      );
-      const allItems = gifs.data.concat(stickers.data);
-
-      for (const item of allItems) {
-        item.orig = item.images.fixed_height_downsampled.url;
-        Gif.findOne({ giphy_id: item.id }, function (err, record) {
-          if (err) {
-            console.log("An error has occurred:" + err);
-            return;
-          }
-          if (record) {
-            console.log("Duplicated record found. Abort saving");
-            return;
-          } else {
-            const newItem = new Gif();
-            newItem.giphy_id = item.id;
-            newItem.orig = item.images.fixed_height_downsampled.url;
-            newItem.keyword = item.title;
-            newItem.isSticker = item.isSticker;
-            newItem.orig_mp4 = item.images.original_mp4.mp4;
-            newItem
-              .save()
-              .then(function () {
-                console.log("Saved new record to DB");
-              })
-              .catch(function (err) {
-                console.log("Error with DB saving:" + err);
-              });
-          }
+    if (record !== null) {
+      record.score = req.params.score;
+      record
+        .save()
+        .then(function () {
+          console.log("Update score for user " + req.params.username);
+          res.status(200).end();
+        })
+        .catch(function (err) {
+          console.error(err.message);
+          res.status(501).end();
         });
-      }
-      res.send(allItems);
+      return;
     }
+
+    var newRank = new Rank();
+
+    newRank.username = req.params.username;
+    newRank.score = req.params.score;
+
+    newRank
+      .save()
+      .then(function () {
+        console.log("Saved new score");
+        res.status(200).end();
+      })
+      .catch(function (err) {
+        console.error(err.message);
+        res.status(501).end();
+      });
   });
 });
 
-const getItems = async (apiUrl) => {
-  const response = await fetch(apiUrl);
-  const data = await response.json();
-  return data;
-};
+app.get("/api/wipe", function (req, res) {
+  Rank.deleteMany({}, function (err, resp) {
+    res.send("Wiped");
+  });
+});
+
+app.get("/api/rank", function (req, res) {
+  Rank.find({}, function (err, record) {
+    if (err) {
+      res.send("An error has occured while fetching Ranking table. ");
+      return;
+    }
+
+    res.send(record);
+  });
+});
